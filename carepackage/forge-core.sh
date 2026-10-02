@@ -18,20 +18,21 @@ apt-get clean
 apt-get update -y
 apt-get install -y debian-archive-keyring
 
-echo "=== 2. Securing APT and Executing Full System Upgrade ==="
+echo "=== 2. Eradicating Desktop Environment to Bypass t64 Conflicts ==="
 # Remove the temporary trusted flag now that the modern keyring is installed
 sed -i 's/\[trusted=yes\] //' /etc/apt/sources.list
 apt-get update -y
-apt-get full-upgrade -y
 
-echo "=== 3. Eradicating Desktop Environment & GUI Fluff ==="
 # Force the system to boot to the CLI terminal instead of a display manager
 systemctl set-default multi-user.target
 
-# Aggressively strip Wayland, Weston, and X11 packages
-apt-get purge -y "weston*" "wayland*" "x11-common" "libx11-*" "lightdm*" "task-desktop" "plymouth"
+# Aggressively strip Wayland, Weston, X11, and GTK packages *before* upgrading
+apt-get purge -y "weston*" "wayland*" "x11-common" "libx11-*" "libgtk*" "lightdm*" "task-desktop" "plymouth"
 apt-get autoremove --purge -y
 apt-get clean
+
+echo "=== 3. Executing Full System Upgrade ==="
+apt-get full-upgrade -y
 
 echo "=== 4. Provisioning Edge AI & Telemetry Dependencies ==="
 # Install compilation headers for the Hailo-8 PCIe driver, plus standard homelab tools
@@ -45,6 +46,6 @@ echo "Please reboot the system to flush the GUI from memory."
 
 echo "Reboot Now? [Y/n]:"
 read -r reboot_choice
-if [[ "$reboot_choice" == "Y" || "$reboot_choice" == "y" ]]; then
+if [[ "$reboot_choice" == "Y" || "$reboot_choice" == "y" || -z "$reboot_choice" ]]; then
     reboot
 fi
