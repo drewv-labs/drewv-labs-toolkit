@@ -13,30 +13,30 @@ EOF
 
 # Clean out the corrupted/failed APT lists from any previous runs
 rm -rf /var/lib/apt/lists/*
-apt-get clean
+apt clean
 
-apt-get update -y
-apt-get install -y debian-archive-keyring
+apt update -y
+apt install -y debian-archive-keyring
 
 echo "=== 2. Eradicating Desktop Environment to Bypass t64 Conflicts ==="
 # Remove the temporary trusted flag now that the modern keyring is installed
 sed -i 's/\[trusted=yes\] //' /etc/apt/sources.list
-apt-get update -y
+apt update -y
 
 # Force the system to boot to the CLI terminal instead of a display manager
 systemctl set-default multi-user.target
 
 # Aggressively strip Wayland, Weston, X11, and GTK packages *before* upgrading
-apt-get purge -y "weston*" "wayland*" "x11-common" "libx11-*" "libgtk*" "lightdm*" "task-desktop" "plymouth"
-apt-get autoremove --purge -y
-apt-get clean
+apt purge -y "weston*" "wayland*" "x11-common" "libx11-*" "libgtk*" "lightdm*" "task-desktop" "plymouth"
+apt autoremove --purge -y
+apt clean
 
 echo "=== 3. Executing Full System Upgrade ==="
-apt-get full-upgrade -y
+apt full-upgrade -y
 
 echo "=== 4. Provisioning Edge AI & Telemetry Dependencies ==="
 # Install compilation headers for the Hailo-8 PCIe driver, plus standard homelab tools
-apt-get install -y \
+apt install -y \
     build-essential dkms pciutils git curl wget htop jq tmux \
     linux-headers-$(uname -r) \
     golang-go
