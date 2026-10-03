@@ -98,7 +98,7 @@ EOF
         sudo dpkg --remove --force-depends libcurl3-gnutls:riscv64 2>/dev/null || true
     fi
 
-    sudo apt full-upgrade -y
+    sudo apt full-upgrade -o Dpkg::Options::="--force-overwrite" -y
     sudo apt install -y \
         build-essential dkms pciutils git curl wget htop jq tmux \
         linux-headers-$(uname -r) \
