@@ -6,7 +6,7 @@
 set -e
 
 echo "=== 1. Installing Compilation Dependencies ==="
-sudo apt-get install -y cmake python3-dev pybind11-dev build-essential python3-setuptools python3-wheel
+sudo apt install -y cmake python3-dev pybind11-dev build-essential python3-setuptools python3-wheel
 
 echo "=== 2. Cloning the HailoRT Repository ==="
 cd ~
