@@ -25,8 +25,10 @@ sudo cmake --install build
 sudo ldconfig
 
 echo "=== 5. Building the pyhailort Python Wheel ==="
-cd hailort/libhailort/bindings/python
-# Generate the standalone .whl file without installing it to the system python
+# Navigate through the nested repository structure to the new platform directory
+cd ~/hailort/hailort/libhailort/bindings/python/platform
+
+# Generate the standalone .whl file
 python3 setup.py bdist_wheel
 
 echo "=== HailoRT API Compilation Complete! ==="
