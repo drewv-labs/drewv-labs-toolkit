@@ -68,16 +68,16 @@ done
 run_core() {
     echo "=== [Phase 1/5] System Locales, Sources & CLI De-bloating ==="
 
+    cat << 'EOF' | sudo tee /etc/apt/sources.list > /dev/null
+deb [trusted=yes] http://deb.debian.org/debian unstable main
+deb https://debianrepo-t.starfivetech.com starfive-debian main
+EOF
+
     sudo apt update -y
     sudo apt install -y locales
     sudo sed -i 's/^# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen
     sudo locale-gen
     sudo update-locale LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8
-
-    cat << 'EOF' | sudo tee /etc/apt/sources.list > /dev/null
-deb [trusted=yes] http://deb.debian.org/debian unstable main
-deb https://debianrepo-t.starfivetech.com starfive-debian main
-EOF
 
     sudo rm -rf /var/lib/apt/lists/*
     sudo apt clean
