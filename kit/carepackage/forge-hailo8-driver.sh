@@ -1,6 +1,7 @@
 #!/bin/bash
-# HailoTwin NPU Driver Forge: PCIe DKMS Compilation
-# Run with: sudo bash compile_hailo_driver.sh
+# VisionForge2 Hailo-8 NPU Driver Forge:
+#    PCIe Direct Compilation and Installation
+# Run with: sudo ./forge-hailo8-driver.sh
 
 set -e
 
@@ -12,8 +13,9 @@ echo "=== 2. Compiling the PCIe Driver ==="
 cd hailort-drivers/linux/pcie
 make all
 
-echo "=== 3. Installing and Registering via DKMS ==="
-make install_dkms
+echo "=== 3. Installing the Kernel Module ==="
+# Bypassing the broken DKMS target for direct installation
+make install
 
 echo "=== 4. Activating the Kernel Module ==="
 modprobe hailo_pci
