@@ -15,8 +15,8 @@ git clone https://github.com/hailo-ai/hailort.git
 cd hailort
 
 echo "=== 3. Compiling the HailoRT C++ Core API ==="
-# Scaffold the build system for the C++ libraries
-cmake -S. -Bbuild -DCMAKE_BUILD_TYPE=Release
+# Scaffold the build system for the C++ libraries with the CMake 4.0+ compatibility flag
+cmake -S. -Bbuild -DCMAKE_BUILD_TYPE=Release -DCMAKE_POLICY_VERSION_MINIMUM=3.5
 cmake --build build -j$(nproc)
 
 echo "=== 4. Installing the C++ Shared Libraries ==="
