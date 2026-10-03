@@ -92,6 +92,12 @@ EOF
     sudo apt autoremove --purge -y
     sudo apt clean
 
+    # --- T64 Migration Unblock Patch ---
+    echo "=== Unblocking libcurl t64 transition dependencies ==="
+    if dpkg -l | grep -q "libcurl3-gnutls"; then
+        sudo dpkg --remove --force-depends libcurl3-gnutls:riscv64 2>/dev/null || true
+    fi
+
     sudo apt full-upgrade -y
     sudo apt install -y \
         build-essential dkms pciutils git curl wget htop jq tmux \
