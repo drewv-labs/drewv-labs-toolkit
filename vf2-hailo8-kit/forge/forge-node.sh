@@ -98,6 +98,7 @@ EOF
         sudo dpkg --remove --force-depends libcurl3-gnutls:riscv64 2>/dev/null || true
     fi
 
+    sudo apt modernize-sources
     sudo DEBIAN_FRONTEND=noninteractive apt full-upgrade \
         -o Dpkg::Options::="--force-overwrite" \
         -o Dpkg::Options::="--force-confdef" \
