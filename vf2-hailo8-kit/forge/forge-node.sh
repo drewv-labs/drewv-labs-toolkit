@@ -24,14 +24,17 @@ trap 'kill $SUDO_PID 2>/dev/null' EXIT
 RUN_CORE=false
 RUN_DRIVER=false
 RUN_API=false
-RUN_ENV=false
+RUN_UV=false
 RUN_TAILSCALE=false
+RUN_MENDELCODE=false
+RUN_CAROLINEV=false
 
 # Default to generic core (--all behavior) if no arguments provided
 if [ $# -eq 0 ]; then
     RUN_CORE=true
     RUN_DRIVER=true
     RUN_API=true
+    RUN_UV=true
 fi
 
 while [[ $# -gt 0 ]]; do
@@ -40,22 +43,24 @@ while [[ $# -gt 0 ]]; do
             RUN_CORE=true
             RUN_DRIVER=true
             RUN_API=true
-            ;;
-        --add-drewv-labs)
-            RUN_TAILSCALE=true
-            RUN_ENV=true
-            ;;
-        --add-tailscale)
-            RUN_TAILSCALE=true
+            RUN_UV=true
             ;;
         --core) RUN_CORE=true ;;
         --driver) RUN_DRIVER=true ;;
         --api) RUN_API=true ;;
-        --env) RUN_ENV=true ;;
+        --uv) RUN_UV=true ;;
         --tailscale) RUN_TAILSCALE=true ;;
+        --mendelcode)
+            RUN_UV=true
+            RUN_MENDELCODE=true
+            ;;
+        --caroline-v)
+            RUN_UV=true
+            RUN_CAROLINEV=true
+            ;;
         *)
-            echo "Usage: ./forge-node.sh [--all | --add-drewv-labs | --add-tailscale]"
-            echo "Standalone Stages: [--core | --driver | --api | --env | --tailscale]"
+            echo "Usage: ./forge-node.sh [--all | --mendelcode | --caroline-v | --tailscale]"
+            echo "Standalone Stages: [--core | --driver | --api | --uv | --tailscale]"
             exit 1
             ;;
     esac
@@ -183,23 +188,18 @@ run_tailscale() {
 }
 
 # ==============================================================================
-# 5. ASTRAL UV & DREW-V LAB ENVIRONMENTS
+# 5. ASTRAL UV
 # ==============================================================================
-run_env() {
+run_uv() {
     echo "=== [Phase 4/5] Installing Astral uv & Scaffolding DREW-V Lab Environments (MendelCode, Caroline-V) ==="
 
     if ! command -v uv &> /dev/null; then
         curl -LsSf https://astral.sh/uv/install.sh | sh
         export PATH="$HOME/.local/bin:$PATH"
     fi
+}
 
-    cd "$HOME"
-    mkdir -p .venvs
-    if [ -z "$(ls .venvs | grep mendelcode-env)" ]; then
-        uv venv .venvs/mendelcode-env
-    fi
-    source .venvs/mendelcode-env/bin/activate
-
+run_hailort_wheelhouse() {
     WHEEL_PATH=$(find "$HOME/hailort/hailort/libhailort/bindings/python/platform/dist" -name "*.whl" | head -n 1)
     if [ -z "$WHEEL_PATH" ]; then
         echo "[-] Error: Could not locate compiled pyhailort .whl file. Did you run the API generation phase?"
@@ -207,8 +207,30 @@ run_env() {
     fi
 
     uv pip install "$WHEEL_PATH"
+}
 
-    python -c "from hailo_platform import VDevice; print('[✓] Hailo-8 User-Space API successfully imported inside DREW-V environment!')"
+run_mendelcode() {
+    cd "$HOME"
+    mkdir -p .venvs
+    if [ -z "$(ls .venvs | grep mendelcode-env)" ]; then
+        uv venv .venvs/mendelcode-env
+    fi
+    source .venvs/mendelcode-env/bin/activate
+
+    run_hailort_wheelhouse
+    python -c "from hailo_platform import VDevice; print('[✓] Hailo-8 User-Space API successfully imported inside .venvs/mendelcode-env!')"
+}
+
+run_carolinev() {
+    cd "$HOME"
+    mkdir -p .venvs
+    if [ -z "$(ls .venvs | grep caroline-v-env)" ]; then
+        uv venv .venvs/caroline-v-env
+    fi
+    source .venvs/caroline-v-env/bin/activate
+
+    run_hailort_wheelhouse
+    python -c "from hailo_platform import VDevice; print('[✓] Hailo-8 User-Space API successfully imported inside .venvs/caroline-v-env!')"
 }
 
 # ==============================================================================
@@ -217,7 +239,12 @@ run_env() {
 if [ "$RUN_CORE" = true ]; then run_core; fi
 if [ "$RUN_DRIVER" = true ]; then run_driver; fi
 if [ "$RUN_API" = true ]; then run_api; fi
-if [ "$RUN_ENV" = true ]; then run_env; fi
+if [ "$RUN_UV" = true ]; then run_uv; fi
+if [ "$RUN_MENDELCODE" = true ]; then run_mendelcode; fi
+if [ "$RUN_CAROLINEV" = true ]; then run_carolinev; fi
 if [ "$RUN_TAILSCALE" = true ]; then run_tailscale; fi
 
 echo "=== Operation Complete! ==="
+
+read -p "Reboot? [y/n] " REBOOT
+if [ "$REBOOT" = "y" ]; then sudo reboot; fi
