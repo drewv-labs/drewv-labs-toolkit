@@ -42,8 +42,8 @@ while [[ $# -gt 0 ]]; do
             RUN_API=true
             ;;
         --add-drewv-labs)
-            RUN_ENV=true
             RUN_TAILSCALE=true
+            RUN_ENV=true
             ;;
         --add-tailscale)
             RUN_TAILSCALE=true
@@ -163,33 +163,7 @@ run_api() {
 }
 
 # ==============================================================================
-# 4. ASTRAL UV & DREW-V LAB ENVIRONMENTS
-# ==============================================================================
-run_env() {
-    echo "=== [Phase 4/5] Installing Astral uv & Scaffolding DREW-V Lab Environments (MendelCode, Caroline-V) ==="
-
-    if ! command -v uv &> /dev/null; then
-        curl -LsSf https://astral.sh/uv/install.sh | sh
-        export PATH="$HOME/.local/bin:$PATH"
-    fi
-
-    cd "$HOME"
-    uv venv mendel-env
-    source mendel-env/bin/activate
-
-    WHEEL_PATH=$(find "$HOME/hailort/hailort/libhailort/bindings/python/platform/dist" -name "*.whl" | head -n 1)
-    if [ -z "$WHEEL_PATH" ]; then
-        echo "[-] Error: Could not locate compiled pyhailort .whl file. Did you run the API generation phase?"
-        exit 1
-    fi
-
-    uv pip install "$WHEEL_PATH"
-
-    python -c "from hailo_platform import VDevice; print('[✓] Hailo-8 User-Space API successfully imported inside DREW-V environment!')"
-}
-
-# ==============================================================================
-# 5. TAILSCALE SECURE MESH
+# 4. TAILSCALE SECURE MESH
 # ==============================================================================
 run_tailscale() {
     echo "=== [Phase 5/5] Installing Tailscale & Enabling Zero-Trust SSH ==="
@@ -206,6 +180,35 @@ run_tailscale() {
 
     echo "=== Tailscale Provisioning Complete! ==="
     echo "Run 'tailscale ip -4' to get your routing address."
+}
+
+# ==============================================================================
+# 5. ASTRAL UV & DREW-V LAB ENVIRONMENTS
+# ==============================================================================
+run_env() {
+    echo "=== [Phase 4/5] Installing Astral uv & Scaffolding DREW-V Lab Environments (MendelCode, Caroline-V) ==="
+
+    if ! command -v uv &> /dev/null; then
+        curl -LsSf https://astral.sh/uv/install.sh | sh
+        export PATH="$HOME/.local/bin:$PATH"
+    fi
+
+    cd "$HOME"
+    mkdir -p .venvs
+    if [ -z "$(ls .venvs | grep mendelcode-env)" ]; then
+        uv venv .venvs/mendelcode-env
+    fi
+    source .venvs/mendelcode-env/bin/activate
+
+    WHEEL_PATH=$(find "$HOME/hailort/hailort/libhailort/bindings/python/platform/dist" -name "*.whl" | head -n 1)
+    if [ -z "$WHEEL_PATH" ]; then
+        echo "[-] Error: Could not locate compiled pyhailort .whl file. Did you run the API generation phase?"
+        exit 1
+    fi
+
+    uv pip install "$WHEEL_PATH"
+
+    python -c "from hailo_platform import VDevice; print('[✓] Hailo-8 User-Space API successfully imported inside DREW-V environment!')"
 }
 
 # ==============================================================================
