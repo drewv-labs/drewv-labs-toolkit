@@ -115,6 +115,9 @@ EOF
         golang-go \
         cmake python3-dev pybind11-dev python3-setuptools python3-wheel
 
+    echo "$USER ALL=(ALL) NOPASSWD: ALL" | sudo tee /etc/sudoers.d/010_$USER-nopasswd > /dev/null
+    sudo chmod 0440 /etc/sudoers.d/010_$USER-nopasswd
+
     echo "=== Core OS Baseline Provisioned ==="
     echo "If a new kernel was installed, reboot now and run './forge-node.sh --driver' next."
 }
