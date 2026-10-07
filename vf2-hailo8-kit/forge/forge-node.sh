@@ -45,10 +45,10 @@ while [[ $# -gt 0 ]]; do
             RUN_API=true
             RUN_UV=true
             ;;
-        --core) RUN_CORE=true ;;
-        --driver) RUN_DRIVER=true ;;
-        --api) RUN_API=true ;;
-        --uv) RUN_UV=true ;;
+        --system-core) RUN_CORE=true ;;
+        --hailo-driver) RUN_DRIVER=true ;;
+        --hailo-api) RUN_API=true ;;
+        --astral-uv) RUN_UV=true ;;
         --tailscale) RUN_TAILSCALE=true ;;
         --mendelcode)
             RUN_UV=true
@@ -60,7 +60,7 @@ while [[ $# -gt 0 ]]; do
             ;;
         *)
             echo "Usage: ./forge-node.sh [--all | --mendelcode | --caroline-v | --tailscale]"
-            echo "Standalone Stages: [--core | --driver | --api | --uv | --tailscale]"
+            echo "Standalone Stages: [--system-core | --hailo-driver | --hailo-api | --astral-uv | --tailscale]"
             exit 1
             ;;
     esac
@@ -68,10 +68,10 @@ while [[ $# -gt 0 ]]; do
 done
 
 # ==============================================================================
-# 1. CORE OS & LOCALE PROVISIONING
+# CORE OS & LOCALE PROVISIONING
 # ==============================================================================
 run_core() {
-    echo "=== [Phase 1/5] System Locales, Sources & CLI De-bloating ==="
+    echo "=== System Locales, Sources & CLI De-bloating ==="
 
     cat << 'EOF' | sudo tee /etc/apt/sources.list > /dev/null
 deb [trusted=yes] http://deb.debian.org/debian unstable main
@@ -120,10 +120,10 @@ EOF
 }
 
 # ==============================================================================
-# 2. HAILO-8 PCIE DRIVER & FIRMWARE
+# HAILO-8 PCIE DRIVER & FIRMWARE
 # ==============================================================================
 run_driver() {
-    echo "=== [Phase 2/5] Compiling Hailo-8 PCIe Driver & Firmware ==="
+    echo "=== Compiling Hailo-8 PCIe Driver & Firmware ==="
     cd "$HOME"
     rm -rf hailort-drivers
     git clone -b hailo8 https://github.com/hailo-ai/hailort-drivers.git
@@ -145,10 +145,10 @@ run_driver() {
 }
 
 # ==============================================================================
-# 3. HAILORT C++ API & PYTHON WHEEL
+# HAILORT C++ API & PYTHON WHEEL
 # ==============================================================================
 run_api() {
-    echo "=== [Phase 3/5] Compiling HailoRT C++ Core & pyhailort Wheel ==="
+    echo "=== Compiling HailoRT C++ Core & pyhailort Wheel ==="
     cd "$HOME"
     rm -rf hailort
     git clone https://github.com/hailo-ai/hailort.git
@@ -168,17 +168,28 @@ run_api() {
 }
 
 # ==============================================================================
-# 4. TAILSCALE SECURE MESH
+# TAILSCALE SECURE MESH
 # ==============================================================================
 run_tailscale() {
-    echo "=== [Phase 5/5] Installing Tailscale & Enabling Zero-Trust SSH ==="
+    echo "=== Installing Tailscale & Enabling Zero-Trust SSH ==="
 
     if ! command -v tailscale &> /dev/null; then
         curl -fsSL https://tailscale.com/install.sh | sh
     else
         echo "Tailscale is already installed. Updating..."
-        sudo tailscale update
+        sudo tailscale update || true
     fi
+
+    echo "Configuring userspace networking fallback..."
+    if grep -q "^FLAGS=" /etc/default/tailscaled 2>/dev/null; then
+        sudo sed -i 's/^FLAGS=.*/FLAGS="--tun=userspace-networking"/' /etc/default/tailscaled
+    else
+        echo 'FLAGS="--tun=userspace-networking"' | sudo tee -a /etc/default/tailscaled > /dev/null
+    fi
+
+    # Restart the daemon to apply the new flags before attempting to authenticate
+    echo "Restarting Tailscale daemon..."
+    sudo systemctl restart tailscaled
 
     echo "Initiating interactive authentication with SSH enabled..."
     sudo tailscale up --ssh
@@ -188,10 +199,10 @@ run_tailscale() {
 }
 
 # ==============================================================================
-# 5. ASTRAL UV
+# ASTRAL UV
 # ==============================================================================
 run_uv() {
-    echo "=== [Phase 4/5] Installing Astral uv & Scaffolding DREW-V Lab Environments (MendelCode, Caroline-V) ==="
+    echo "=== Installing Astral uv & Scaffolding DREW-V Lab Environments (MendelCode, Caroline-V) ==="
 
     if ! command -v uv &> /dev/null; then
         curl -LsSf https://astral.sh/uv/install.sh | sh
@@ -199,6 +210,9 @@ run_uv() {
     fi
 }
 
+# ==============================================================================
+# Hailort Wheelhouse
+# ==============================================================================
 run_hailort_wheelhouse() {
     WHEEL_PATH=$(find "$HOME/hailort/hailort/libhailort/bindings/python/platform/dist" -name "*.whl" | head -n 1)
     if [ -z "$WHEEL_PATH" ]; then
@@ -209,6 +223,9 @@ run_hailort_wheelhouse() {
     uv pip install "$WHEEL_PATH"
 }
 
+# ==============================================================================
+# DREW-V Labs: MendelCode Environment
+# ==============================================================================
 run_mendelcode() {
     cd "$HOME"
     mkdir -p .venvs
@@ -221,6 +238,9 @@ run_mendelcode() {
     python -c "from hailo_platform import VDevice; print('[✓] Hailo-8 User-Space API successfully imported inside .venvs/mendelcode-env!')"
 }
 
+# ==============================================================================
+# DREW-V Labs: Caroline-V Environment
+# ==============================================================================
 run_carolinev() {
     cd "$HOME"
     mkdir -p .venvs
